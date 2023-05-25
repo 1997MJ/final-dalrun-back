@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="com.dalrun.dao.DotMapDao">
+
+<select id="getAllDotMap" resultType="com.dalrun.dto.DotMapDto">
+
+select location,(select crewName from crew  where crewSeq = g.crewseq) as crewname,
+if(g.sale=1, (select crewImg from crew where g.crewSeq=crewSeq), (select profile from member where g.memId=memId)) as myFile
+,memId,price,groundcolor,dotNewFile,sale,regdate,message
+from ground g order by location asc
+
+</select>
+
+
+<insert id="crew_buydotMap" parameterType="com.dalrun.dto.DotMapDto">
+
+insert into ground(location,memId,crewSeq,groundColor,message,dotNewFile,dotOrigFile,sale,regdate,price)
+values(#{location},#{memId},
+(select crewSeq from crew where crewName=#{crewName}),(select crewColor from crew where crewName=#{crewName}),#{message},#{dotNewFile},#{dotOrigFile}
+,1,now(),#{price});
+
+
+</insert>
+
+
+<insert id="my_buydotMap" parameterType="com.dalrun.dto.DotMapDto">
+
+insert into ground(location,memId,groundColor,message,dotNewFile,dotOrigFile,sale,regdate,price)
+values(#{location},#{memId},'white',#{message},#{dotNewFile},#{dotOrigFile},2,now(),#{price});
+
+
+</insert>
+
+
+<update id="crewOutChangeDotmap" parameterType="com.dalrun.dto.DotMapDto">
+update ground set crewSeq=null , sale=2 ,groundColor='white' where crewSeq=#{crewSeq} and memId=#{memId};
+</update>
+
+<update id="crewInChangeDotmap" parameterType="com.dalrun.dto.DotMapDto">
+update ground set crewSeq=#{crewSeq} , sale=1, groundColor=#{groundColor} where crewSeq=#{crewSeq} and memId=#{memId};
+</update>
+
+
+
+</mapper>

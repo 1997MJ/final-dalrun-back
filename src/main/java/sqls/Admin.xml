@@ -1,0 +1,581 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="com.dalrun.dao.AdminDao">
+	<!-- 공통  -->
+	<sql id="searchMember">
+		<if test="choice != null and choice != '' and search != null and search != ''">
+			<if test="choice == 'memId'">
+				AND memId LIKE CONCAT('%', #{search}, '%')
+			</if>
+			<if test="choice == 'name'">
+				AND memberName LIKE CONCAT('%', #{search}, '%')
+			</if>
+			<if test="choice == 'phone'">
+				AND phone LIKE CONCAT('%', #{search}, '%')
+			</if>
+		</if>
+	</sql>
+	
+	<sql id="member">
+		<choose>
+			<when test="grade != null and grade !=''">
+				WHERE grade = #{grade} 
+				<include refid="searchMember"></include>
+			</when>
+			<otherwise>
+				WHERE 1=1 
+				<include refid="searchMember"></include>
+			</otherwise>
+		</choose>
+	</sql>
+	
+	<sql id="searchCrew">
+		<if test="choice != null and choice != '' and search != null and search != ''">
+			<if test="choice == 'memId'">
+				WHERE c.memId LIKE CONCAT('%', #{search}, '%')
+			</if>
+			<if test="choice == 'crewName'">
+				WHERE c.crewName LIKE CONCAT('%', #{search}, '%')
+			</if>
+		</if>
+	</sql>
+	
+	<sql id="searchProductinqiry">
+		<if test="choice != null and choice != '' and search != null and search != ''">
+			<if test="choice == 'memId'">
+				AND memId LIKE CONCAT('%', #{search}, '%')
+			</if>
+			<if test="choice == 'productCode'">
+				AND productCode LIKE CONCAT('%', #{search}, '%')
+			</if>
+			<if test="choice == 'title'">
+				AND inqTitle LIKE CONCAT('%',#{search},'%')
+			</if>
+			<if test="choice == 'content'">
+				AND inqContent LIKE CONCAT('%',#{search},'%')
+			</if>
+			<if test="choice == 'inqWriter'">
+				AND inqWriter LIKE CONCAT('%',#{search},'%')
+			</if>
+		</if>
+	</sql>
+	
+	<sql id="searchQna">	
+		<if test="choice != null and choice != '' and search != null and search != ''">
+			<if test="choice == 'memId'">
+				WHERE memId LIKE CONCAT('%', #{search}, '%')
+			</if>
+			<if test="choice == 'category'">
+				WHERE category = #{search}
+			</if>
+			<if test="choice == 'qnaTitle'">
+				WHERE qnaTitle LIKE CONCAT('%',#{search},'%')
+			</if>
+			<if test="choice == 'question'">
+				WHERE question LIKE CONCAT('%',#{search},'%')
+			</if>
+		</if>
+	</sql>
+	
+	<sql id="searchShoereview">
+		<if test="choice != null and choice!='' and search != null and search!= ''">
+			<if test="choice == 'title'">
+				WHERE srTitle like concat('%',#{search},'%')
+			</if>
+			<if test="choice == 'content'">
+				WHERE srCotent like concat('%',#{search},'%')
+			</if>
+		</if>
+	</sql>
+	
+	<sql id="searchDiary">
+		<if test="choice != null and choice != '' and search != null and search != ''">
+			<if test="choice == 'memId'">
+				WHERE memId LIKE CONCAT('%', #{search}, '%')
+			</if>
+			<if test="choice == 'title'">
+				WHERE title LIKE CONCAT('%',#{search},'%')
+			</if>
+			<if test="choice == 'content'">
+				WHERE content LIKE CONCAT('%',#{search},'%')
+			</if>
+		</if>
+	</sql>
+	
+	<sql id="searchCompetition">
+		<if test="choice != null and choice != '' and search != null and search != ''">
+			<if test="choice == 'name'">
+				AND compTitle LIKE CONCAT('%',#{search},'%')
+			</if>
+			<if test="choice == 'content'">
+				AND compContent LIKE CONCAT('%',#{search},'%')
+			</if>
+		</if>
+		<if test="local != null and local != ''">
+			AND compLocal = #{local}
+		</if>
+	</sql>
+	
+	<sql id="searchProduct">
+		<if test="sale != null and sale !=''">
+			AND productSale= #{sale}
+		</if>
+		<if test="stock != null and stock !=''">
+			<if test="stock == 1">
+				AND productStock >= #{stock} 
+			</if>
+			<if test="stock == 0">
+				AND productStock = #{stock}
+			</if>
+		</if>
+		<choose>
+			<when test="choice == 'productCode'">
+				AND productCode LIKE CONCAT('%',#{search},'%')
+			</when>
+			<when test="choice == 'productId'">
+				AND productId LIKE CONCAT('%',#{search},'%')
+			</when>
+			<when test="choice == 'productName'">
+				AND productName LIKE CONCAT('%',#{search},'%')
+			</when>
+		</choose>
+	</sql>
+	
+	<sql id="searchOrder">
+		<if test="order != null and order !=''">
+			<if test="order lt 4">
+				AND orderState = #{order}			
+			</if>
+			<if test="order == 4">
+				AND orderState BETWEEN 1 AND 3
+			</if>
+		</if>
+		<if test="delivery != null and delivery !=''">
+			AND deliveryState = #{delivery} 
+		</if>
+		<if test="choice != null and choice != '' and search != null and search != ''">
+			<if test="choice == 'orderNumber'">
+				AND orderNumber = #{search}
+			</if>
+			<if test="choice == 'memId'">
+				AND memId LIKE CONCAT('%',#{search},'%')
+			</if>
+		</if>
+	</sql>
+
+	
+	<!-- 회원 관리 -->
+	<select id="memberlist" parameterType="com.dalrun.dto.SearchParam" resultType="com.dalrun.dto.MemberDto">
+		SELECT *
+		FROM 
+			(SELECT ROW_NUMBER()OVER(ORDER BY regdate DESC) AS RNUM, memId, password, memberName, 
+				phone, birth, foot, profile, regdate, memberupdate, auth, del, point, grade
+			FROM MEMBER
+			<include refid="member"></include>
+			ORDER BY regdate DESC) A
+		WHERE RNUM BETWEEN ${start} AND ${end}
+	</select>	
+	<select id="getAllMember" parameterType="com.dalrun.dto.SearchParam" resultType="Integer">
+		SELECT IFNULL(COUNT(*), 0)
+		FROM MEMBER
+		<include refid="member"></include>
+	</select>
+	
+	<select id="crewlist" parameterType="com.dalrun.dto.SearchParam" resultType="com.dalrun.dto.CrewDto">
+		SELECT *
+		FROM (
+		    SELECT ROW_NUMBER() OVER (ORDER BY c.crewCreateDate DESC) AS RNUM, c.crewSeq, c.memId, c.crewSetUp, c.crewUpdate, c.maxMem, c.crewDel, c.crewLevel, 
+		        c.crewImg, c.crewName, c.crewScore, c.crewcolor, c.crewCreateDate, c.title, c.content, c.type, c.readCount, c.likeCount,
+		        (SELECT IFNULL(COUNT(memId), 0) FROM MEMBER WHERE crewSeq = c.crewSeq) AS crewMemberCnt
+		    FROM CREW c 
+		    LEFT JOIN MEMBER m ON c.crewSeq = m.crewSeq
+		    <include refid="searchCrew"></include>
+		    GROUP BY c.crewSeq
+		    ORDER BY c.crewCreateDate DESC
+		) A
+		WHERE RNUM BETWEEN ${start} AND ${end};
+	</select>
+	<select id="getAllCrew" parameterType="com.dalrun.dto.SearchParam" resultType="Integer">
+		SELECT IFNULL(COUNT(*), 0)
+		FROM CREW c
+		<include refid="searchCrew"></include>
+	</select>
+	
+	<!-- 게시물 관리 -->
+	<select id="productinquirylist" parameterType="com.dalrun.dto.SearchParam" resultType="com.dalrun.dto.ProductInquiryDto">
+		SELECT B.*
+		FROM (
+		    SELECT ROW_NUMBER() OVER (ORDER BY inqDate DESC) AS RNUM, 
+		    		(SELECT COUNT(*) FROM PRODUCTINQUIRY WHERE inqRef = A.inqSeq) AS replyCnt, A.*
+		    FROM 
+				(SELECT *
+		        FROM PRODUCTINQUIRY
+		        WHERE inqDepth = 0
+		        <include refid="searchProductinqiry"></include>
+		        ORDER BY inqDate DESC, inqSeq DESC
+		    ) A
+		    HAVING 1=1
+			<if test="inqState != null and inqState !=''">
+				<if test="inqState == 0">
+					AND replyCnt-1 = #{inqState} 
+				</if>
+				<if test="inqState == 1">
+					AND replyCnt > #{inqState} 
+				</if>
+			</if>
+		) B
+		WHERE RNUM BETWEEN ${start} AND ${end}
+	</select>
+	<select id="getAllProductinquiry" parameterType="com.dalrun.dto.SearchParam" resultType="Integer">
+		SELECT IFNULL(COUNT(*), 0)
+		FROM PRODUCTINQUIRY
+		WHERE inqDepth = 0
+		<include refid="searchProductinqiry"></include>
+	</select>
+	
+	<select id="qnalist" parameterType="com.dalrun.dto.SearchParam" resultType="com.dalrun.dto.QnaDto">
+		SELECT *
+		FROM 
+			(SELECT ROW_NUMBER()OVER(ORDER BY wdate DESC) AS RNUM, qnaSeq, category, qnaTitle, 
+				wdate, readCount, question, answer, auth, del, memId
+			FROM QNA
+			<include refid="searchQna"></include>
+			ORDER BY wdate DESC) A
+		WHERE RNUM BETWEEN ${start} AND ${end}
+	</select>
+	<select id="getAllQna" parameterType="com.dalrun.dto.SearchParam" resultType="Integer">
+		SELECT IFNULL(COUNT(*), 0)
+		FROM QNA
+		<include refid="searchQna"></include>
+	</select>
+	
+	<select id="shoereviewlist" parameterType="com.dalrun.dto.SearchParam" resultType="com.dalrun.dto.ShoeReviewDto">
+		SELECT *
+		FROM
+			(select row_number()over(order by srwdate desc) as rnum, srSeq,srTitle,srCotent,srBrand,srimage,
+				srLink ,readcount,srDel,srwdate ,(select count(*) from shoereviewComment where srSeq=s.srSeq)as commentcount 
+			FROM SHOEREVIEW s
+			<include refid="searchShoereview"></include>
+			ORDER BY srwdate DESC, srSeq DESC) a
+		WHERE rnum between ${start} and ${end}
+	</select>
+	
+	<select id="getAllShoereview" parameterType="com.dalrun.dto.SearchParam" resultType="Integer">
+		SELECT IFNULL(COUNT(*), 0)
+		FROM SHOEREVIEW
+		<include refid="searchShoereview"></include>
+	</select>
+	
+	<select id="diarylist" parameterType="com.dalrun.dto.SearchParam" resultType="com.dalrun.dto.DiaryDto">
+		SELECT *
+		FROM 
+			(SELECT ROW_NUMBER()OVER(ORDER BY wdate DESC) AS RNUM, diarySeq, memId,
+				title, content, wdate, totalDist, totalTime, kcal
+			FROM DIARY
+			<include refid="searchDiary"></include>
+			ORDER BY wdate DESC, diarySeq DESC) A
+		WHERE RNUM BETWEEN ${start} AND ${end}
+	</select>
+	<select id="getAllDiary" parameterType="com.dalrun.dto.SearchParam" resultType="Integer">
+		SELECT IFNULL(COUNT(*), 0)
+		FROM DIARY
+		<include refid="searchDiary"></include>
+	</select>
+
+	<select id="competitionlist" parameterType="com.dalrun.dto.SearchParam" resultType="com.dalrun.dto.CompetitionDto">
+		SELECT A.*, (SELECT IFNULL(COUNT(*), 0) FROM COMPCOMMENT WHERE compSeq = A.compSeq) AS commentcount
+		FROM 
+			(SELECT ROW_NUMBER()OVER(ORDER BY comRegdate DESC) AS RNUM, compSeq, compTitle, compContent, compLocation, compDateStart, 
+				compDateEnd, compLocal, locationLat, locationLng, receiptStart, receiptEnd, compimage, compLink, compSponsor, readcount, comRegdate
+			FROM COMPETITION
+			WHERE 1=1
+			<include refid="searchCompetition"></include>
+			ORDER BY comRegdate DESC, compSeq DESC) A 
+		WHERE RNUM BETWEEN ${start} AND ${end}
+	</select>
+	<select id="getAllCompetition" parameterType="com.dalrun.dto.SearchParam" resultType="Integer">
+		SELECT IFNULL(COUNT(*), 0)
+		FROM COMPETITION
+		WHERE 1=1
+		<include refid="searchCompetition"></include>
+	</select> 
+
+	<!-- 쇼핑몰 관리 -->
+	<select id="productlist" parameterType="com.dalrun.dto.SearchParam" resultType="com.dalrun.dto.ProductDto">
+		SELECT A.*, (SELECT IFNULL(COUNT(*), 0) FROM PRODUCTORDERDETAIL WHERE productId = A.productId) orderCnt
+		FROM 
+			(SELECT ROW_NUMBER()OVER(ORDER BY productRegiDate DESC) AS RNUM, productId, productCode, productCategory, productBrand, productName, productPrice, 
+				productColor, productSize, productDescription, productOrigFile, productNewFile, productStock, productSale, productRegiDate
+			FROM PRODUCT
+			WHERE 1=1
+			<include refid="searchProduct"></include>
+			ORDER BY productRegiDate DESC, productId DESC) A
+		WHERE RNUM BETWEEN ${start} AND ${end}
+	</select>
+	<select id="getAllProduct" parameterType="com.dalrun.dto.SearchParam" resultType="Integer">
+		SELECT IFNULL(COUNT(*), 0)
+		FROM PRODUCT
+		WHERE 1=1
+		<include refid="searchProduct"></include>
+	</select>
+	
+	<select id="orderlist" parameterType="com.dalrun.dto.SearchParam" resultType="com.dalrun.dto.OrderDto">
+		SELECT *
+		FROM 
+			(SELECT ROW_NUMBER()OVER(ORDER BY orderDate DESC) AS RNUM, orderNumber, memId, orderName, orderAddress, 
+				orderPhone, orderRequirment, orderTotalprice, orderDate, orderQuantity, orderState, deliveryState
+			FROM PRODUCTORDER
+			WHERE 1=1
+			<include refid="searchOrder"></include>
+			ORDER BY orderDate DESC, orderNumber DESC) A
+		WHERE RNUM BETWEEN ${start} AND ${end}
+	</select>
+	<select id="getAllOrder" parameterType="com.dalrun.dto.SearchParam" resultType="Integer">
+		SELECT IFNULL(COUNT(*), 0)
+		FROM PRODUCTORDER
+		WHERE 1=1
+		<include refid="searchOrder"></include>
+	</select>
+	
+	<!-- 수정/삭제 -->
+	<sql id="commonForeach">
+		<foreach item="item" collection="checkedList" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</sql>
+	
+	<!-- 회원 관리 -->
+	<update id="updatemember" parameterType="com.dalrun.dto.MemberDto">
+		UPDATE MEMBER
+		SET password=#{password}, memberName=#{memberName}, email=#{email}, phone=#{phone}, birth=#{birth}, 
+			point=#{point}, grade=#{grade}, foot=#{foot}, memberupdate=now()
+		WHERE memId=#{memId}  
+	</update>
+	
+	<update id="delmember" parameterType="List">
+		UPDATE MEMBER
+		SET del=1
+		WHERE memId IN 
+		<include refid="commonForeach"></include>
+	</update>
+	
+	<update id="updatecrew" parameterType="com.dalrun.dto.CrewDto">
+		UPDATE CREW
+		SET crewName=#{crewName}, memId=#{memId}, crewSetUp=#{crewSetUp}, crewUpdate=DATE_FORMAT(now(), "%Y-%m-%d"), maxMem=#{maxMem}, crewLevel=#{crewLevel}, crewScore=#{crewScore}, crewcolor=#{crewcolor}
+		WHERE crewSeq = #{crewSeq}
+	</update>	
+	
+	<update id="delcrew" parameterType="List">
+		UPDATE CREW
+		SET crewDel=1
+		WHERE crewSeq IN 
+		<include refid="commonForeach"></include>
+	</update>
+	
+	<!-- 게시물 관리 -->
+	<!-- 문의 -->
+	<update id="updatereply" parameterType="com.dalrun.dto.ProductInquiryDto">
+		UPDATE PRODUCTINQUIRY
+		SET inqContent=#{inqContent}	
+		WHERE inqSeq = #{inqSeq}
+	</update>
+	<delete id="delreply" parameterType="int">
+		DELETE FROM PRODUCTINQUIRY
+		WHERE inqSeq = #{inqSeq}
+	</delete>
+	<delete id="delproductinquiry" parameterType="List">
+		DELETE FROM PRODUCTINQUIRY
+		WHERE inqRef IN
+		<include refid="commonForeach"></include>
+	</delete>
+	
+	<update id="delqna" parameterType="List">
+		UPDATE QNA
+		SET del=1
+		WHERE qnaSeq IN 
+		<include refid="commonForeach"></include>
+	</update>
+	
+	<!-- 리뷰 -->
+	<select id="getSrdSeq" parameterType="int" resultType="int">
+		SELECT srdSeq
+		FROM SHOEREVIEWDETAIL
+		WHERE srSeq = #{srSeq}
+	</select>
+	<update id="updateshoereview" parameterType="com.dalrun.dto.ShoeReviewDto">
+		UPDATE SHOEREVIEW
+		SET srTitle=#{srTitle}, srCotent=#{srCotent}, srBrand=#{srBrand}, srLink=#{srLink}, srPrice=#{srPrice}
+		<if test="srimage != null and srimage != '' and oriSrImage != null and oriSrImage !=''">
+			, srimage=#{srimage}, oriSrImage=#{oriSrImage}
+		</if>
+		WHERE srSeq = #{srSeq}
+	</update>
+	<update id="updateshoereviewdetail" parameterType="com.dalrun.dto.ShoeReviewDetailDto">
+		<if test="srdList != null and srdList.size() > 0">
+    		<foreach collection="srdList" item="item" open="" separator=";" close="">
+	    		UPDATE SHOEREVIEWDETAIL
+	    		<set>
+	    			<if test="item.srcomment != null and item.srcomment = ''">srcomment=#{item.srcomment},</if>
+	    			<if test="item.srimage != null and item.srimage != '' and item.oriSrImage != null and item.oriSrImage !=''">
+						srimage=#{item.srimage}, oriSrImage=#{item.oriSrImage}
+					</if>
+				</set>
+	    		WHERE srSeq = #{item.srSeq}
+    		</foreach>
+    	</if>
+	</update>
+	<delete id="delshoereview" parameterType="List">
+		DELETE FROM SHOEREVIEW
+		WHERE srSeq IN
+		<include refid="commonForeach"></include>
+	</delete>
+	<delete id="delshoereviewdetail" parameterType="int">
+		DELETE FROM SHOEREVIEWDETAIL
+		WHERE srdSeq = #{srdSeq}
+	</delete>
+	
+	<!-- 다이어리 -->
+	<update id="updatediary" parameterType="com.dalrun.dto.DiaryDto">
+		UPDATE DIARY
+		SET memId=#{memId}, title=#{title}, content=#{content}, score=#{score}
+		WHERE diarySeq = #{diarySeq}
+	</update>
+	<delete id="deldiary" parameterType="List">
+		DELETE FROM DIARY
+		WHERE diarySeq IN
+		<include refid="commonForeach"></include>
+	</delete>
+	
+	<!-- 대회일정 -->
+	<update id="updatecomperition" parameterType="com.dalrun.dto.CompetitionDto">
+		UPDATE COMPETITION
+		SET compTitle=#{compTitle}, compContent=#{compContent}, compDateEnd=#{compDateEnd}, compDateStart=#{compDateStart}, compLink=#{compLink}, compLocal=#{compLocal}, compLocation=#{compLocation}, 
+			locationLat=#{locationLat}, locationLng=#{locationLng}, compSponsor=#{compSponsor}, receiptStart=#{receiptStart}, receiptEnd=#{receiptEnd}
+			<if test="compimage != null and compimage != '' and oriCompimage != null and oriCompimage != ''"> 
+				, compimage=#{compimage}, oriCompimage=#{oriCompimage}
+			</if>
+		WHERE compSeq = #{compSeq}
+	</update>
+	<delete id="delcompetition" parameterType="List">
+		DELETE FROM COMPETITION
+		WHERE compSeq IN
+		<include refid="commonForeach"></include>
+	</delete>
+	
+	<!-- 쇼핑몰 관리 -->
+	<select id="getProductOrder" parameterType="String" resultType="int">
+		SELECT IFNULL(COUNT(*), 0) 
+		FROM PRODUCTORDERDETAIL
+		WHERE productId = #{productId}
+	</select>
+	<update id="updateproduct" parameterType="com.dalrun.dto.ProductDto">
+		UPDATE PRODUCT
+		SET productCode=#{productCode}, productCategory=#{productCategory}, productName=#{productName}, productDescription=#{productDescription}, productColor=#{productColor}, 
+			productSize=#{productSize}, productPrice=#{productPrice}, productStock=#{productStock}, productSale=#{productSale}, productRegiDate=#{productRegiDate}
+		WHERE productId=#{productId}
+	</update>
+	<delete id="delproduct" parameterType="List">
+		DELETE FROM PRODUCT
+		WHERE productId IN
+		<include refid="commonForeach"></include>
+	</delete>
+	
+	<update id="updateorder" parameterType="com.dalrun.dto.OrderDto">
+		UPDATE PRODUCTORDER
+		SET	memId=#{memId}, orderName=#{orderName}, orderAddress=#{orderAddress}, orderPhone=#{orderPhone}, orderRequirment=#{orderRequirment}, 
+			orderQuantity=#{orderQuantity}, orderTotalprice=#{orderTotalprice}, orderState=#{orderState}, deliveryState=#{deliveryState}
+		WHERE orderNumber = #{orderNumber}
+	</update>
+	<delete id="delorder" parameterType="List">
+		DELETE FROM PRODUCTORDER
+		WHERE orderNumber IN
+		<include refid="commonForeach"></include>
+	</delete>
+	
+	<!-- 대시보드 -->
+	<select id="getDashboardData" resultType="com.dalrun.dto.DashboardData">
+		SELECT
+		  (SELECT IFNULL(COUNT(*),0) FROM PRODUCTORDER WHERE orderState=0 AND deliveryState=0) orderCnt,
+		  (SELECT IFNULL(COUNT(*),0) FROM PRODUCTORDER WHERE orderState BETWEEN 1 AND 3) orderSummaryCnt,
+		  (SELECT IFNULL(COUNT(*),0) FROM PRODUCT WHERE productStock=0) stockoutCnt,
+		  (SELECT IFNULL(COUNT(*),0) as cnt FROM (
+			SELECT COUNT(*)-1 AS replyCnt
+			FROM PRODUCTINQUIRY
+			WHERE inqRef IN (SELECT inqSeq FROM PRODUCTINQUIRY WHERE inqDepth = 0)
+			GROUP BY inqRef
+			HAVING replyCnt = 0) T) inquiryWaitingCnt;
+	</select>
+	
+	<select id="getWeekSummaryData" resultType="com.dalrun.dto.DashboardData">
+	    SELECT DATE(NOW() - INTERVAL (6 - t.n) DAY) weekDate, 
+			IFNULL(COUNT(srwdate), 0) reviewCnt,
+		    IFNULL(COUNT(orderDate),0) orderCnt,
+		    IFNULL(SUM(orderTotalprice), 0) orderTotalprice,
+		    IFNULL(COUNT(DISTINCT regdate),0) accountCnt,
+		    IFNULL(COUNT(inqDate),0) inquiryWaitingCnt
+		FROM 
+			(SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6) t
+			LEFT JOIN SHOEREVIEW ON DATE(srwdate) = DATE(NOW() - INTERVAL (6 - t.n) DAY)
+			LEFT JOIN (SELECT * FROM PRODUCTORDER WHERE orderState=0 AND deliveryState=0) A ON DATE(A.orderDate) = DATE(NOW() - INTERVAL (6 - t.n) DAY)
+			LEFT JOIN MEMBER ON DATE(regdate) = DATE(NOW() - INTERVAL (6 - t.n) DAY)
+		    LEFT JOIN 
+				(SELECT *
+				FROM PRODUCTINQUIRY
+				WHERE inqRef IN (SELECT inqSeq FROM PRODUCTINQUIRY WHERE inqDepth = 0)) C ON DATE(C.inqDate) = DATE(NOW() - INTERVAL (6 - t.n) DAY)
+		GROUP BY DATE(NOW() - INTERVAL (6 - t.n) DAY)
+	</select>
+
+	<!-- 차트 -->
+	<select id="getMemberScoreRank" resultType="com.dalrun.dto.ScoreRankDto">
+		SELECT
+			MONTH(now()) as month,
+			YEAR(now()) as year,
+			memId,
+		    SUM(totalDist) as monthlyTotalDist,
+			SUM(score) as monthlyScore,
+			RANK()OVER(ORDER BY SUM(score) DESC, SUM(totalDist) DESC) as ranking
+		FROM diary
+		WHERE MONTH(wdate) &lt;= MONTH(now()) AND YEAR(wdate) &lt;= YEAR(now()) 
+		GROUP BY year, month, memId
+		ORDER BY year DESC, month DESC, ranking
+		LIMIT 0,7;
+	</select>
+	<select id="getCrweSeqList" resultType="int">
+		SELECT crewSeq FROM CREW
+	</select>
+	<!-- <select id="getCrewScoreRank" parameterType="com.dalrun.dto.CrewDto" resultType="com.dalrun.dto.ScoreRankDto">
+		 SELECT
+			MONTH(now()) as month,
+		    YEAR(now()) as year,
+		    crewSeq,
+		    crewName,
+		    crewLevel,
+		    (#{crewTotalScore}) as monthlyScore,
+		    RANK()OVER(ORDER BY #{crewTotalScore} DESC) as ranking
+		FROM crew
+		WHERE MONTH(crewCreateDate) &lt;= MONTH(now()) AND YEAR(crewCreateDate) &lt;= YEAR(now()) 
+		GROUP BY year, month, crewSeq
+		ORDER BY year DESC, month DESC, ranking
+	    LIMIT 0,7 
+	</select> -->
+	
+	<!-- 방문자 -->
+	<insert id="saveCookieData" parameterType="String">
+		INSERT INTO VISITORS(user, firstVisitTime, lastVisitTime)
+		VALUES(#{user}, now(), now())
+	</insert>
+	<update id="updateCookie" parameterType="String">
+		UPDATE VISITORS
+		SET lastVisitTime=now()
+		WHERE user = #{user}
+	</update>
+	<select id="getDailyVisitorsCnt" resultType="com.dalrun.dto.VisitorsDto">
+		SELECT IFNULL(COUNT(firstVisitTime), 0) dailyVisitorsCnt, DATE(NOW() - INTERVAL (6 - t.n) DAY) weekDate
+		FROM 
+			(SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6) t
+			LEFT JOIN visitors ON DATE(firstVisitTime) = DATE(NOW() - INTERVAL (6 - t.n) DAY)
+		GROUP BY DATE(NOW() - INTERVAL (6 - t.n) DAY)
+	</select>
+</mapper>

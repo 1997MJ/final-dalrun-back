@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="com.dalrun.dao.OrderDao">
+
+    <select id="orderlist" resultType="com.dalrun.dto.OrderDto">
+        SELECT *
+        FROM PRODUCTORDER
+    </select>
+    
+    
+    <insert id="addToCart" parameterType="com.dalrun.dto.CartDto">
+        INSERT INTO cart (cartId, cartProdQuantity, productId, memId, orderSeq)
+        VALUES (#{cartId}, #{cartProdQuantity}, #{productId}, #{memId}, #{orderSeq})
+    </insert>
+    
+    
+    <insert id="writeOrderData" parameterType="com.dalrun.dto.OrderDto">
+        INSERT INTO productorder (orderNunber,
+                                  memId, 
+                                  orderName, 
+                                  orderAddress, 
+                                  orderPhone, 
+                                  orderRequirment,          
+                                  orderTotalprice,          
+                                  orderQuantity)
+        VALUES                   (ROUND(UNIX_TIMESTAMP(CURTIME(4)) * 1000),
+                                  #{memId}, 
+                                  #{orderName}, 
+                                  #{orderAddress}, 
+                                  #{orderPhone}, 
+                                  #{orderRequirment},          
+                                  #{orderTotalprice},          
+                                  #{orderQuantity})
+    </insert>
+    
+</mapper>
